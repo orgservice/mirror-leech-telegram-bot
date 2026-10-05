@@ -192,7 +192,7 @@ async def get_document_type(path):
             is_video = True
         return is_video, is_audio, is_image
     if result[0] and result[2] == 0:
-        fields = eval(result[0]).get("streams")
+        fields = loads(result[0]).get("streams")
         if fields is None:
             LOGGER.error(f"get_document_type: {result}")
             return is_video, is_audio, is_image
