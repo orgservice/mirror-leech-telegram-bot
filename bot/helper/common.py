@@ -51,6 +51,7 @@ from .ext_utils.links_utils import (
 )
 from .ext_utils.media_utils import (
     create_thumb,
+    download_thumb,
     take_ss,
     get_document_type,
     FFMpeg,
@@ -71,6 +72,7 @@ class TaskConfig:
         self.user = self.message.from_user or self.message.sender_chat
         self.user_id = self.user.id
         self.user_dict = user_data.get(self.user_id, {})
+        self.file_details = {}
         self.clone_dump_chats = {}
         self.file_details = {}
         self.dir = f"{DOWNLOAD_DIR}{self.mid}"
@@ -581,6 +583,8 @@ class TaskConfig:
                 self.thumb = (
                     await create_thumb(msg) if msg.photo or msg.document else ""
                 )
+            elif self.thumb.startswith(("http://", "https://")):
+                self.thumb = await download_thumb(self.thumb)
 
     async def get_tag(self, text: list):
         if self.user:
