@@ -66,8 +66,20 @@ class TelegramUploader:
         self._sent_msg = None
         self._user_session = self._listener.user_transmission
         self._error = ""
-        self._base_msg = None
+        self._dest = None
         self._files_links = False
+
+    def _client(self):
+        return TgClient.user if self._user_session else self._listener.client
+
+    async def _send(self, method, **kwargs):
+        if self._dest:
+            return await getattr(self._client(), f"send_{method}")(
+                chat_id=self._dest,
+                message_thread_id=self._listener.chat_thread_id,
+                **kwargs,
+            )
+        return await getattr(self._sent_msg, f"reply_{method}")(**kwargs)
 
     async def _upload_progress(self, current, _):
         if self._listener.is_cancelled:
@@ -90,7 +102,7 @@ class TelegramUploader:
             if "LEECH_FILENAME_PREFIX" not in self._listener.user_dict
             else ""
         )
-        self._lcaption = (
+        self._lcaption = str(
             self._listener.user_dict.get("LEECH_CAPTION")
             or self._listener.user_dict.get("LEECH_CAPTIONS")
             or ""
@@ -105,32 +117,14 @@ class TelegramUploader:
 
     async def _msg_to_reply(self):
         if self._listener.up_dest:
-            msg = (
-                self._listener.message.link
-                if self._listener.is_super_chat
-                else self._listener.message.text.lstrip("/")
-            )
+            self._dest = self._listener.up_dest
             try:
-                if self._user_session:
-                    self._sent_msg = await TgClient.user.send_message(
-                        chat_id=self._listener.up_dest,
-                        text=msg,
-                        message_thread_id=self._listener.chat_thread_id,
-                        disable_notification=True,
-                    )
-                else:
-                    self._sent_msg = await self._listener.client.send_message(
-                        chat_id=self._listener.up_dest,
-                        text=msg,
-                        message_thread_id=self._listener.chat_thread_id,
-                        disable_notification=True,
-                    )
-                    self._is_private = self._sent_msg.chat.type.name == "PRIVATE"
+                chat = await self._client().get_chat(self._dest)
+                if not self._user_session:
+                    self._is_private = chat.type.name == "PRIVATE"
             except Exception as e:
                 await self._listener.on_upload_error(str(e))
                 return False
-            finally:
-                self._base_msg = self._sent_msg
         elif self._user_session:
             self._sent_msg = await TgClient.user.get_messages(
                 chat_id=self._listener.message.chat.id, message_ids=self._listener.mid
@@ -216,26 +210,34 @@ class TelegramUploader:
         for i in range(0, len(inputs), 10):
             batch = inputs[i : i + 10]
             self._sent_msg = (
-                await self._sent_msg.reply_media_group(
+                await self._send(
+                    "media_group",
                     media=batch,
                     disable_notification=True,
                 )
             )[-1]
 
     async def _send_media_group(self, subkey, key, msgs):
+        if self._listener.hybrid_leech or not self._user_session:
+            client = self._listener.client
+        else:
+            client = TgClient.user
         for index, msg in enumerate(msgs):
-            if self._listener.hybrid_leech or not self._user_session:
-                msgs[index] = await self._listener.client.get_messages(
-                    chat_id=msg[0], message_ids=msg[1]
-                )
-            else:
-                msgs[index] = await TgClient.user.get_messages(
-                    chat_id=msg[0], message_ids=msg[1]
-                )
-        msgs_list = await msgs[0].reply_to_message.reply_media_group(
-            media=self._get_input_media(subkey, key),
-            disable_notification=True,
-        )
+            msgs[index] = await client.get_messages(
+                chat_id=msg[0], message_ids=msg[1]
+            )
+        if self._dest:
+            msgs_list = await client.send_media_group(
+                chat_id=self._dest,
+                message_thread_id=self._listener.chat_thread_id,
+                media=self._get_input_media(subkey, key),
+                disable_notification=True,
+            )
+        else:
+            msgs_list = await msgs[0].reply_to_message.reply_media_group(
+                media=self._get_input_media(subkey, key),
+                disable_notification=True,
+            )
         for msg in msgs:
             if msg.link in self._msgs_dict:
                 del self._msgs_dict[msg.link]
@@ -247,9 +249,6 @@ class TelegramUploader:
             for m in msgs_list:
                 self._msgs_dict[m.link] = m.caption
         self._sent_msg = msgs_list[-1]
-        if self._base_msg:
-            await delete_message(self._base_msg)
-            self._base_msg = None
 
     async def upload(self):
         await self._user_settings()
@@ -300,16 +299,17 @@ class TelegramUploader:
                                         await self._send_media_group(subkey, key, msgs)
                     if self._listener.hybrid_leech and self._listener.user_transmission:
                         self._user_session = f_size > 2097152000
-                        if self._user_session:
-                            self._sent_msg = await TgClient.user.get_messages(
-                                chat_id=self._sent_msg.chat.id,
-                                message_ids=self._sent_msg.id,
-                            )
-                        else:
-                            self._sent_msg = await self._listener.client.get_messages(
-                                chat_id=self._sent_msg.chat.id,
-                                message_ids=self._sent_msg.id,
-                            )
+                        if self._sent_msg and not self._dest:
+                            if self._user_session:
+                                self._sent_msg = await TgClient.user.get_messages(
+                                    chat_id=self._sent_msg.chat.id,
+                                    message_ids=self._sent_msg.id,
+                                )
+                            else:
+                                self._sent_msg = await self._listener.client.get_messages(
+                                    chat_id=self._sent_msg.chat.id,
+                                    message_ids=self._sent_msg.id,
+                                )
                     self._last_msg_in_group = False
                     self._last_uploaded = 0
                     await self._upload_file(cap_mono, file_, f_path)
@@ -366,9 +366,6 @@ class TelegramUploader:
                         LOGGER.info(
                             f"While sending media group at the end of task. Error: {e}"
                         )
-        if self._base_msg:
-            await delete_message(self._base_msg)
-            self._base_msg = None
         if self._listener.is_cancelled:
             return
         if self._total_files == 0:
@@ -426,7 +423,8 @@ class TelegramUploader:
                     return
                 if thumb == "none":
                     thumb = None
-                self._sent_msg = await self._sent_msg.reply_document(
+                self._sent_msg = await self._send(
+                    "document",
                     document=self._up_path,
                     thumb=thumb,
                     caption=cap_mono,
@@ -455,7 +453,8 @@ class TelegramUploader:
                     return
                 if thumb == "none":
                     thumb = None
-                self._sent_msg = await self._sent_msg.reply_video(
+                self._sent_msg = await self._send(
+                    "video",
                     video=self._up_path,
                     caption=cap_mono,
                     duration=duration,
@@ -473,7 +472,8 @@ class TelegramUploader:
                     return
                 if thumb == "none":
                     thumb = None
-                self._sent_msg = await self._sent_msg.reply_audio(
+                self._sent_msg = await self._send(
+                    "audio",
                     audio=self._up_path,
                     caption=cap_mono,
                     duration=duration,
@@ -487,7 +487,8 @@ class TelegramUploader:
                 key = "photos"
                 if self._listener.is_cancelled:
                     return
-                self._sent_msg = await self._sent_msg.reply_photo(
+                self._sent_msg = await self._send(
+                    "photo",
                     photo=self._up_path,
                     caption=cap_mono,
                     disable_notification=True,
@@ -522,9 +523,6 @@ class TelegramUploader:
                 and await aiopath.exists(thumb)
             ):
                 await remove(thumb)
-            if self._base_msg and not self._last_msg_in_group:
-                await delete_message(self._base_msg)
-                self._base_msg = None
         except (FloodWait, FloodPremiumWait) as f:
             LOGGER.warning(str(f))
             await sleep(f.value * 1.3)
