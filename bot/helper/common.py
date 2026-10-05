@@ -72,6 +72,7 @@ class TaskConfig:
         self.user_id = self.user.id
         self.user_dict = user_data.get(self.user_id, {})
         self.clone_dump_chats = {}
+        self.file_details = {}
         self.dir = f"{DOWNLOAD_DIR}{self.mid}"
         self.up_dir = ""
         self.link = ""
