@@ -123,9 +123,11 @@ class MetadataProcessor:
         if not isinstance(metadata_dict, dict):
             return {}
         stream_vars = self.vars.copy()
+        key = "audiolang" if stream_type == "audio" else "sublang"
         if stream_lang and stream_lang.lower() not in {"unknown", "und", "none"}:
-            key = "audiolang" if stream_type == "audio" else "sublang"
             stream_vars[key] = full_lang or self.convert_lang_code(stream_lang)
+        else:
+            stream_vars[key] = "unknown" if stream_type == "audio" else "none"
         return {
             self.sanitize(key): (
                 str(value).format(**stream_vars)
