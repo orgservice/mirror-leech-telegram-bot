@@ -329,7 +329,7 @@ Buzzheavier Folder ID: {bh_fol}"""
         buttons.data_button("Close", f"userset {user_id} close")
         text = (
             f"<u>Metadata Settings for {name}</u>\n"
-            "Metadata applies to supported audio/video files before upload.\n\n"
+            "Metadata applies before upload to supported audio/video files.\n\n"
             + "\n".join(metadata_lines)
         )
     else:
@@ -420,6 +420,14 @@ Buzzheavier Folder ID: {bh_fol}"""
         else:
             ffc = "None"
 
+        metadata_status = (
+            "Exists"
+            if any(
+                user_dict.get(setting) or getattr(Config, setting, {})
+                for setting in metadata_options
+            )
+            else "None"
+        )
         buttons.data_button("Metadata Settings", f"userset {user_id} metadata")
 
         if user_dict:
@@ -442,7 +450,9 @@ YT-DLP Options is <code>{ytopt}</code>
 
 Gallery-DL Options is <code>{gdlopt}</code>
 
-FFMPEG Commands is <b>{ffc}</b>"""
+FFMPEG Commands is <b>{ffc}</b>
+
+METADATA Settings is <b>{metadata_status}</b>"""
 
     return text, buttons.build_menu(2)
 
