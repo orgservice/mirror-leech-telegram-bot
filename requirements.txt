@@ -34,4 +34,5 @@ uvicorn
 uvloop
 xattr
 gallery-dl
+pycountry
 yt-dlp[default,curl-cffi]
