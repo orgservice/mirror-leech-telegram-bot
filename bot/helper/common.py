@@ -744,7 +744,6 @@ class TaskConfig:
 
         if not self.files_to_proceed:
             return dl_path
-        self.file_details.setdefault("filename", ospath.basename(dl_path))
         t_path = dl_path
         sevenz = SevenZ(self)
         LOGGER.info(f"Extracting: {self.name}")
