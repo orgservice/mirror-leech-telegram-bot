@@ -5,7 +5,6 @@ from logging import getLogger
 from natsort import natsorted
 from os import walk, path as ospath
 from time import time
-from mimetypes import guess_type
 from re import match as re_match, sub as re_sub
 from pyrogram.errors import FloodWait, RPCError, FloodPremiumWait, BadRequest
 from pyrogram.types import (
@@ -189,9 +188,7 @@ class TelegramUploader:
             "languages": languages,
             "subtitles": subtitles,
             "md5_hash": await sync_to_async(get_md5_hash, self._up_path),
-            "mime_type": self._listener.file_details.get("mime_type")
-            or guess_type(file_)[0]
-            or "text/plain",
+            "mime_type": self._listener.file_details.get("mime_type") or "text/plain",
             "prefilename": self._listener.file_details.get("filename") or file_,
             "precaption": self._listener.file_details.get("caption", "") or "",
         }
