@@ -29,6 +29,12 @@ GALLERY_DL_OPTIONS = ""
 USE_SERVICE_ACCOUNTS = False
 NAME_SUBSTITUTE = r""
 FFMPEG_CMDS = {"merge": ["-f concat -safe 0 -i mltb.txt -c copy mltb.mp4 -del"]}
+# Metadata dictionaries accept dynamic values such as "{basename}" and "{year}".
+# METADATA applies to file/container tags; the others apply to their stream types.
+METADATA = {}
+AUDIO_METADATA = {}
+VIDEO_METADATA = {}
+SUBTITLE_METADATA = {}
 UPLOAD_PATHS = {}
 # GDrive Tools
 GDRIVE_ID = ""
