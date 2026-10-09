@@ -43,7 +43,7 @@ async def apply_metadata_title(
     ):
         return dl_path
 
-    LOGGER.info(f"Applying metadata to {listener.name}")
+    LOGGER.info(f"Applying metadata: {listener.name}")
     ffmpeg = FFMpeg(listener)
     if await aiopath.isfile(dl_path):
         paths = [dl_path]
