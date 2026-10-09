@@ -226,32 +226,6 @@ class TaskListener(TaskConfig):
             self.size = await get_path_size(up_dir)
             self.clear()
 
-        if any(
-            (
-                self.metadata_dict,
-                self.audio_metadata_dict,
-                self.video_metadata_dict,
-                self.subtitle_metadata_dict,
-            )
-        ):
-            from ...modules.metadata import apply_metadata_title
-
-            up_path = await apply_metadata_title(
-                self,
-                up_path,
-                gid,
-                self.metadata_dict,
-                self.audio_metadata_dict,
-                self.video_metadata_dict,
-                self.subtitle_metadata_dict,
-            )
-            if self.is_cancelled:
-                return
-            self.is_file = await aiopath.isfile(up_path)
-            self.name = up_path.replace(f"{up_dir}/", "").split("/", 1)[0]
-            self.size = await get_path_size(up_dir)
-            self.clear()
-
         if self.name_sub:
             LOGGER.info(f"Start Name Substitution {up_path}")
             up_path = await self.substitute(up_path)
@@ -282,6 +256,32 @@ class TaskListener(TaskConfig):
 
         if self.sample_video:
             up_path = await self.generate_sample_video(up_path, gid)
+            if self.is_cancelled:
+                return
+            self.is_file = await aiopath.isfile(up_path)
+            self.name = up_path.replace(f"{up_dir}/", "").split("/", 1)[0]
+            self.size = await get_path_size(up_dir)
+            self.clear()
+
+        if any(
+            (
+                self.metadata_dict,
+                self.audio_metadata_dict,
+                self.video_metadata_dict,
+                self.subtitle_metadata_dict,
+            )
+        ):
+            from ...modules.metadata import apply_metadata_title
+
+            up_path = await apply_metadata_title(
+                self,
+                up_path,
+                gid,
+                self.metadata_dict,
+                self.audio_metadata_dict,
+                self.video_metadata_dict,
+                self.subtitle_metadata_dict,
+            )
             if self.is_cancelled:
                 return
             self.is_file = await aiopath.isfile(up_path)
