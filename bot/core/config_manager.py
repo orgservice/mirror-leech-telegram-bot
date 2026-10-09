@@ -38,6 +38,10 @@ class Config:
     LEECH_DUMP_CHAT = ""
     LEECH_FILENAME_PREFIX = ""
     LEECH_SPLIT_SIZE = 2097152000
+    METADATA = {}
+    AUDIO_METADATA = {}
+    VIDEO_METADATA = {}
+    SUBTITLE_METADATA = {}
     MEDIA_GROUP = False
     HYBRID_LEECH = False
     HYDRA_IP = ""

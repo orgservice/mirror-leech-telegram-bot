@@ -126,9 +126,16 @@ class Mirror(TaskListener):
             "-ns": "",
             "-tl": "",
             "-ff": set(),
+            "-meta": "",
         }
 
         arg_parser(input_list[1:], args)
+        try:
+            self.set_metadata(args["-meta"])
+        except ValueError as error:
+            await send_message(self.message, f"Invalid metadata format: {error}")
+            await self.remove_from_same_dir()
+            return
 
         self.select = args["-s"]
         self.seed = args["-d"]
