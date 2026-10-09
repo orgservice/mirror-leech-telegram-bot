@@ -20,6 +20,7 @@ from ..core.config_manager import Config
 from ..core.telegram_manager import TgClient
 from ..helper.ext_utils.db_handler import database
 from ..helper.ext_utils.media_utils import create_thumb
+from ..helper.ext_utils.metadata_utils import MetadataProcessor
 from ..helper.telegram_helper.button_build import ButtonMaker
 from ..helper.ext_utils.help_messages import user_settings_text
 from ..helper.ext_utils.bot_utils import (
@@ -48,6 +49,12 @@ leech_options = [
 rclone_options = ["RCLONE_CONFIG", "RCLONE_PATH", "RCLONE_FLAGS"]
 gdrive_options = ["TOKEN_PICKLE", "GDRIVE_ID", "INDEX_URL"]
 uploaders_options = ["BUZZHEAVIER_ACCOUNT_ID", "BUZZHEAVIER_FOLDER_ID"]
+metadata_options = {
+    "METADATA": "Global Metadata",
+    "AUDIO_METADATA": "Audio Metadata",
+    "VIDEO_METADATA": "Video Metadata",
+    "SUBTITLE_METADATA": "Subtitle Metadata",
+}
 
 
 async def get_user_settings(from_user, stype="main"):
@@ -302,6 +309,29 @@ Stop Duplicate is <b>{sd_msg}</b>"""
         text = f"""<u>Uploaders Settings for {name}</u>
 Buzzheavier Account ID: {bh_acc}
 Buzzheavier Folder ID: {bh_fol}"""
+    elif stype == "metadata":
+        metadata_lines = []
+        for setting, label in metadata_options.items():
+            value = user_dict.get(setting, getattr(Config, setting, {}))
+            source = "User setting" if setting in user_dict else "Bot default"
+            configured = bool(value)
+            buttons.data_button(
+                f"{label}: {'Set' if configured else 'None'}",
+                f"userset {user_id} menu {setting}",
+            )
+            value_text = str(value) if configured else "None"
+            if len(value_text) > 180:
+                value_text = value_text[:177] + "..."
+            metadata_lines.append(
+                f"{label} ({source}): <code>{escape(value_text)}</code>"
+            )
+        buttons.data_button("Back", f"userset {user_id} back")
+        buttons.data_button("Close", f"userset {user_id} close")
+        text = (
+            f"<u>Metadata Settings for {name}</u>\n"
+            "Metadata applies to supported audio/video files before upload.\n\n"
+            + "\n".join(metadata_lines)
+        )
     else:
         buttons.data_button("Leech", f"userset {user_id} leech")
         buttons.data_button("Rclone", f"userset {user_id} rclone")
@@ -389,6 +419,8 @@ Buzzheavier Folder ID: {bh_fol}"""
             ffc = "Exists"
         else:
             ffc = "None"
+
+        buttons.data_button("Metadata Settings", f"userset {user_id} metadata")
 
         if user_dict:
             buttons.data_button("Reset All", f"userset {user_id} reset all")
@@ -507,6 +539,12 @@ async def set_option(_, message, option):
         for x in fx:
             x = x.lstrip(".")
             value.append(x.strip().lower())
+    elif option in metadata_options:
+        try:
+            value = MetadataProcessor.parse_string(value)
+        except ValueError as error:
+            await send_message(message, str(error))
+            return
     elif option == "INDEX_URL":
         value = value
     elif option in [
@@ -687,7 +725,7 @@ async def edit_user_settings(client, query):
         await query.answer("Not Yours!", show_alert=True)
     elif data[2] == "setevent":
         await query.answer()
-    elif data[2] in ["leech", "gdrive", "rclone", "uploaders"]:
+    elif data[2] in ["leech", "gdrive", "rclone", "uploaders", "metadata"]:
         await query.answer()
         await update_user_settings(query, data[2])
     elif data[2] == "menu":
@@ -770,7 +808,10 @@ async def edit_user_settings(client, query):
             del user_dict[data[3]]
             await database.update_user_doc(user_id, data[3])
         else:
-            update_user_ldata(user_id, data[3], "")
+            if data[3] in metadata_options:
+                user_dict.pop(data[3], None)
+            else:
+                update_user_ldata(user_id, data[3], "")
             if data[3] == "LEECH_CAPTION":
                 user_dict.pop("LEECH_CAPTIONS", None)
             await database.update_user_data(user_id)
