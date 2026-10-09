@@ -175,7 +175,7 @@ class TelegramUploader:
             self._up_path = new_path
         return cap_mono
 
-    async def leech_caption(self, template, size):
+    async def leech_caption(self, template, size, file_):
         template = str(template)
         duration, quality, languages, subtitles = await get_media_info(
             self._up_path, True
@@ -189,7 +189,7 @@ class TelegramUploader:
             "subtitles": subtitles,
             "md5_hash": await sync_to_async(get_md5_hash, self._up_path),
             "mime_type": self._listener.file_details.get("mime_type", "text/plain"),
-            "prefilename": self._listener.file_details.get("filename", ""),
+            "prefilename": self._listener.file_details.get("filename") or file_,
             "precaption": self._listener.file_details.get("caption", "") or "",
         }
         return render(template, values)
@@ -286,7 +286,7 @@ class TelegramUploader:
                     cap_mono = await self._prepare_file(file_, dirpath)
                     if self._lcaption:
                         cap_mono = await self.leech_caption(
-                            self._lcaption, f_size
+                            self._lcaption, f_size, file_
                         )
                     if self._last_msg_in_group:
                         group_lists = [
