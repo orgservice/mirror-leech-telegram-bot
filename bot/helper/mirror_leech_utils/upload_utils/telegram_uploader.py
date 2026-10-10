@@ -5,6 +5,7 @@ from logging import getLogger
 from natsort import natsorted
 from os import walk, path as ospath
 from time import time
+from mimetypes import guess_type
 from re import match as re_match, sub as re_sub
 from pyrogram.errors import FloodWait, RPCError, FloodPremiumWait, BadRequest
 from pyrogram.types import (
