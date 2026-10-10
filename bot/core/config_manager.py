@@ -22,6 +22,7 @@ class Config:
     DATABASE_URL = ""
     DATABASE_NAME = "mltb"
     DEFAULT_UPLOAD = "rc"
+    DELETE_LINKS = False
     EQUAL_SPLITS = False
     EXCLUDED_EXTENSIONS = ""
     INCLUDED_EXTENSIONS = ""
@@ -36,8 +37,13 @@ class Config:
     JD_EMAIL = ""
     JD_PASS = ""
     LEECH_DUMP_CHAT = ""
+    LEECH_CAPTION = ""
     LEECH_FILENAME_PREFIX = ""
     LEECH_SPLIT_SIZE = 2097152000
+    METADATA = {}
+    AUDIO_METADATA = {}
+    VIDEO_METADATA = {}
+    SUBTITLE_METADATA = {}
     MEDIA_GROUP = False
     HYBRID_LEECH = False
     HYDRA_IP = ""

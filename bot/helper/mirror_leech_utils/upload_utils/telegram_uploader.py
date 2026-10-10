@@ -94,7 +94,7 @@ class TelegramUploader:
         self._lcaption = (
             self._listener.user_dict.get("LEECH_CAPTION")
             or self._listener.user_dict.get("LEECH_CAPTIONS")
-            or ""
+            or Config.LEECH_CAPTION
         )
         if self._thumb != "none" and not await aiopath.exists(self._thumb):
             self._thumb = None
@@ -189,9 +189,7 @@ class TelegramUploader:
             "languages": languages,
             "subtitles": subtitles,
             "md5_hash": await sync_to_async(get_md5_hash, self._up_path),
-            "mime_type": self._listener.file_details.get("mime_type")
-            or guess_type(file_)[0]
-            or "text/plain",
+            "mime_type": self._listener.file_details.get("mime_type", "text/plain"),
             "prefilename": self._listener.file_details.get("filename") or file_,
             "precaption": self._listener.file_details.get("caption", "") or "",
         }
