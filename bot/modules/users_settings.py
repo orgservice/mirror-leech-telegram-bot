@@ -100,6 +100,7 @@ async def get_user_settings(from_user, stype="main"):
         leech_caption = (
             user_dict.get("LEECH_CAPTION")
             or user_dict.get("LEECH_CAPTIONS")
+            or Config.LEECH_CAPTION
             or "None"
         )
         if len(leech_caption) > 200:

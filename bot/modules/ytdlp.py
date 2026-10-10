@@ -23,6 +23,7 @@ from ..helper.telegram_helper.message_utils import (
     send_message,
     edit_message,
     delete_message,
+    delete_links,
 )
 
 
@@ -422,6 +423,7 @@ class YtDlp(TaskListener):
                 self.message, COMMAND_USAGE["yt"][0], COMMAND_USAGE["yt"][1]
             )
             await self.remove_from_same_dir()
+            await delete_links(self.message)
             return
 
         if "mdisk.me" in self.link:
@@ -432,6 +434,7 @@ class YtDlp(TaskListener):
         except Exception as e:
             await send_message(self.message, e)
             await self.remove_from_same_dir()
+            await delete_links(self.message)
             return
         options = {"usenetrc": True, "cookiefile": "cookies.txt"}
         if opt:
@@ -452,6 +455,7 @@ class YtDlp(TaskListener):
             msg = str(e).replace("<", " ").replace(">", " ")
             await send_message(self.message, f"{self.tag} {msg}")
             await self.remove_from_same_dir()
+            await delete_links(self.message)
             return
         finally:
             await self.run_multi(input_list, YtDlp)
@@ -466,6 +470,7 @@ class YtDlp(TaskListener):
         playlist = "entries" in result
         ydl = YoutubeDLHelper(self)
         await ydl.add_download(path, qual, playlist, opt)
+        await delete_links(self.message)
 
 
 async def ytdl(client, message):

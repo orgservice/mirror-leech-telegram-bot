@@ -93,7 +93,7 @@ class TelegramUploader:
         self._lcaption = (
             self._listener.user_dict.get("LEECH_CAPTION")
             or self._listener.user_dict.get("LEECH_CAPTIONS")
-            or ""
+            or Config.LEECH_CAPTION
         )
         if self._thumb != "none" and not await aiopath.exists(self._thumb):
             self._thumb = None

@@ -50,6 +50,7 @@ from ..mirror_leech_utils.upload_utils.telegram_uploader import TelegramUploader
 from ..telegram_helper.button_build import ButtonMaker
 from ..telegram_helper.message_utils import (
     send_message,
+    delete_links,
     delete_status,
     update_status_message,
 )
@@ -460,6 +461,7 @@ class TaskListener(TaskConfig):
                     non_queued_up.remove(self.mid)
             await start_from_queued()
             return
+        await delete_links(self.message)
         await clean_download(self.dir)
         async with task_dict_lock:
             if self.mid in task_dict:
@@ -516,6 +518,7 @@ class TaskListener(TaskConfig):
         self._torbox_web_id = 0
         msg = f"{self.tag} Download: {escape(str(error))}"
         await send_message(self.message, msg, button)
+        await delete_links(self.message)
         if count == 0:
             await self.clean()
         else:
@@ -554,6 +557,7 @@ class TaskListener(TaskConfig):
                 del task_dict[self.mid]
             count = len(task_dict)
         await send_message(self.message, f"{self.tag} {escape(str(error))}")
+        await delete_links(self.message)
         if count == 0:
             await self.clean()
         else:
