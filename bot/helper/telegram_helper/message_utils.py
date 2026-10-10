@@ -103,6 +103,13 @@ async def delete_message(message):
         LOGGER.error(str(e))
 
 
+async def delete_links(message):
+    if Config.DELETE_LINKS:
+        await delete_message(message)
+        if message.reply_to_message:
+            await delete_message(message.reply_to_message)
+
+
 async def auto_delete_message(cmd_message=None, bot_message=None):
     await sleep(60)
     if cmd_message is not None:
