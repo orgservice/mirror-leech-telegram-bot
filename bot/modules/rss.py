@@ -80,7 +80,11 @@ def _resolve_command(command_str):
     Returns the handler function, or None if not recognized.
     Handles commands with or without CMD_SUFFIX.
     """
-    cmd_name = command_str.strip().lstrip("/").split(maxsplit=1)[0]
+    command_parts = command_str.strip().lstrip("/").split(maxsplit=1)
+    if not command_parts:
+        LOGGER.warning(f"RSS: Cannot resolve an empty command: {command_str!r}")
+        return None
+    cmd_name = command_parts[0]
     mapping = _get_command_map()
     handler = mapping.get(cmd_name)
     if handler is None and Config.CMD_SUFFIX:
@@ -91,7 +95,7 @@ def _resolve_command(command_str):
 
 
 async def _start_rss_download(
-    url, command, user_id, rss_chat_id, rss_topic_id, item_title
+    url, command, user_id, rss_chat_id, rss_topic_id, item_title, tag
 ):
     """Send a notification to RSS_CHAT and start the download directly."""
     handler = _resolve_command(command)
@@ -115,7 +119,11 @@ async def _start_rss_download(
         )
         return
 
-    msg = await send_rss(cmd_text, rss_chat_id, rss_topic_id)
+    msg = await send_rss(
+        f"{cmd_text}\n<b>Tag: </b>{tag} <code>{user_id}</code>",
+        rss_chat_id,
+        rss_topic_id,
+    )
     if isinstance(msg, str):
         LOGGER.error(f"RSS: Failed to send to RSS_CHAT: {msg}")
         return
@@ -222,8 +230,7 @@ async def rss_sub(_, message, pre_event):
             inf = arg_base["-inf"]
             exf = arg_base["-exf"]
             stv = arg_base["-stv"]
-            if stv is not None:
-                stv = stv.lower() == "true"
+            stv = stv.lower() == "true" if stv is not None else True
             if inf is not None:
                 filters_list = inf.split("|")
                 for x in filters_list:
@@ -238,7 +245,7 @@ async def rss_sub(_, message, pre_event):
             inf = None
             exf = None
             cmd = None
-            stv = False
+            stv = True
         try:
             async with AsyncClient(
                 headers=headers, follow_redirects=True, timeout=60, verify=False
@@ -258,7 +265,8 @@ async def rss_sub(_, message, pre_event):
                     summary = rss_d.entries[0]["summary"]
                     matches = size_regex.findall(summary)
                     sizes = [match[0] for match in matches]
-                    size = get_size_bytes(sizes[0])
+                    if sizes:
+                        size = get_size_bytes(sizes[0])
                 try:
                     last_link = rss_d.entries[0]["links"][1]["href"]
                 except IndexError:
@@ -327,8 +335,8 @@ async def get_user_id(title):
         return next(
             (
                 (True, user_id)
-                for user_id, feed in rss_dict.items()
-                if feed["title"] == title
+                for user_id, feeds in rss_dict.items()
+                if title in feeds
             ),
             (False, False),
         )
@@ -343,7 +351,7 @@ async def rss_update(_, message, pre_event, state):
     updated = []
     for title in titles:
         title = title.strip()
-        if not (res := rss_dict[user_id].get(title, False)):
+        if not (res := rss_dict.get(user_id, {}).get(title, False)):
             if is_sudo:
                 res, user_id = await get_user_id(title)
             if not res:
@@ -404,7 +412,7 @@ async def rss_list(query, start, all_users=False):
                     list_feed += f"<b>Command:</b> <code>{data['command']}</code>\n"
                     list_feed += f"<b>Inf:</b> <code>{data['inf']}</code>\n"
                     list_feed += f"<b>Exf:</b> <code>{data['exf']}</code>\n"
-                    list_feed += f"<b>Sensitive:</b> <code>{data.get('sensitive', False)}</code>\n"
+                    list_feed += f"<b>Sensitive:</b> <code>{data.get('sensitive', True)}</code>\n"
                     list_feed += f"<b>Paused:</b> <code>{data['paused']}</code>\n"
                     list_feed += f"<b>User:</b> {data['tag'].replace('@', '', 1)}"
                     index += 1
@@ -420,7 +428,7 @@ async def rss_list(query, start, all_users=False):
                 list_feed += f"<b>Inf:</b> <code>{data['inf']}</code>\n"
                 list_feed += f"<b>Exf:</b> <code>{data['exf']}</code>\n"
                 list_feed += (
-                    f"<b>Sensitive:</b> <code>{data.get('sensitive', False)}</code>\n"
+                    f"<b>Sensitive:</b> <code>{data.get('sensitive', True)}</code>\n"
                 )
                 list_feed += f"<b>Paused:</b> <code>{data['paused']}</code>\n"
     buttons.data_button("Back", f"rss back {user_id}")
@@ -809,8 +817,9 @@ async def rss_monitor():
     for user, items in list(rss_dict.items()):
         for title, data in items.items():
             try:
-                if data["paused"]:
+                if data.get("paused", False):
                     continue
+                all_paused = False
                 tries = 0
                 while True:
                     try:
@@ -843,7 +852,6 @@ async def rss_monitor():
                 else:
                     last_link = entry0.get("link")
                 last_title = entry0.get("title")
-                all_paused = False
                 if data["last_feed"] == last_link or data["last_title"] == last_title:
                     continue
                 feed_count = 0
@@ -866,7 +874,7 @@ async def rss_monitor():
                             summary = rss_d.entries[feed_count]["summary"]
                             matches = size_regex.findall(summary)
                             sizes = [match[0] for match in matches]
-                            size = get_size_bytes(sizes[0])
+                            size = get_size_bytes(sizes[0]) if sizes else 0
                         else:
                             size = 0
                     except IndexError:
@@ -877,10 +885,10 @@ async def rss_monitor():
                     parse = True
                     for flist in data["inf"]:
                         if (
-                            data.get("sensitive", False)
+                            data.get("sensitive", True)
                             and all(x.lower() not in item_title.lower() for x in flist)
                         ) or (
-                            not data.get("sensitive", False)
+                            not data.get("sensitive", True)
                             and all(x not in item_title for x in flist)
                         ):
                             parse = False
@@ -890,10 +898,10 @@ async def rss_monitor():
                         continue
                     for flist in data["exf"]:
                         if (
-                            data.get("sensitive", False)
+                            data.get("sensitive", True)
                             and any(x.lower() in item_title.lower() for x in flist)
                         ) or (
-                            not data.get("sensitive", False)
+                            not data.get("sensitive", True)
                             and any(x in item_title for x in flist)
                         ):
                             parse = False
@@ -916,6 +924,7 @@ async def rss_monitor():
                             rss_chat_id=rss_chat_id,
                             rss_topic_id=rss_topic_id,
                             item_title=item_title,
+                            tag=data["tag"],
                         )
                     else:
                         feed_msg = f"<b>Name: </b><code>{item_title.replace('>', '').replace('<', '')}</code>"

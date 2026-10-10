@@ -474,8 +474,38 @@ class YtDlp(TaskListener):
 
 
 async def ytdl(client, message):
+    text = message.text.split("\n")
+    if len(text) > 1 and text[1].startswith("Tag: "):
+        try:
+            tag, user_id = text[1].split("Tag: ")[1].rsplit(maxsplit=1)
+            if not user_id.isdecimal():
+                raise ValueError("Tag user ID must be numeric.")
+            message.from_user = await client.get_users(int(user_id))
+        except Exception as error:
+            LOGGER.error(f"Failed to process yt-dlp Tag line: {error}")
+            await send_message(message, "Invalid or unavailable Tag user ID.")
+            return
+        try:
+            await message.unpin()
+        except Exception:
+            pass
     bot_loop.create_task(YtDlp(client, message).new_event())
 
 
 async def ytdl_leech(client, message):
+    text = message.text.split("\n")
+    if len(text) > 1 and text[1].startswith("Tag: "):
+        try:
+            tag, user_id = text[1].split("Tag: ")[1].rsplit(maxsplit=1)
+            if not user_id.isdecimal():
+                raise ValueError("Tag user ID must be numeric.")
+            message.from_user = await client.get_users(int(user_id))
+        except Exception as error:
+            LOGGER.error(f"Failed to process yt-dlp Tag line: {error}")
+            await send_message(message, "Invalid or unavailable Tag user ID.")
+            return
+        try:
+            await message.unpin()
+        except Exception:
+            pass
     bot_loop.create_task(YtDlp(client, message, is_leech=True).new_event())

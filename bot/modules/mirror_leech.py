@@ -532,36 +532,156 @@ class Mirror(TaskListener):
 
 
 async def mirror(client, message):
+    text = message.text.split("\n")
+    if len(text) > 1 and text[1].startswith("Tag: "):
+        try:
+            tag, user_id = text[1].split("Tag: ")[1].rsplit(maxsplit=1)
+            if not user_id.isdecimal():
+                raise ValueError("Tag user ID must be numeric.")
+            message.from_user = await client.get_users(int(user_id))
+        except Exception as error:
+            LOGGER.error(f"Failed to process mirror Tag line: {error}")
+            await send_message(message, "Invalid or unavailable Tag user ID.")
+            return
+        try:
+            await message.unpin()
+        except Exception:
+            pass
     bot_loop.create_task(Mirror(client, message).new_event())
 
 
 async def qb_mirror(client, message):
+    text = message.text.split("\n")
+    if len(text) > 1 and text[1].startswith("Tag: "):
+        try:
+            tag, user_id = text[1].split("Tag: ")[1].rsplit(maxsplit=1)
+            if not user_id.isdecimal():
+                raise ValueError("Tag user ID must be numeric.")
+            message.from_user = await client.get_users(int(user_id))
+        except Exception as error:
+            LOGGER.error(f"Failed to process mirror Tag line: {error}")
+            await send_message(message, "Invalid or unavailable Tag user ID.")
+            return
+        try:
+            await message.unpin()
+        except Exception:
+            pass
     bot_loop.create_task(Mirror(client, message, is_qbit=True).new_event())
 
 
 async def jd_mirror(client, message):
+    text = message.text.split("\n")
+    if len(text) > 1 and text[1].startswith("Tag: "):
+        try:
+            tag, user_id = text[1].split("Tag: ")[1].rsplit(maxsplit=1)
+            if not user_id.isdecimal():
+                raise ValueError("Tag user ID must be numeric.")
+            message.from_user = await client.get_users(int(user_id))
+        except Exception as error:
+            LOGGER.error(f"Failed to process mirror Tag line: {error}")
+            await send_message(message, "Invalid or unavailable Tag user ID.")
+            return
+        try:
+            await message.unpin()
+        except Exception:
+            pass
     bot_loop.create_task(Mirror(client, message, is_jd=True).new_event())
 
 
 async def nzb_mirror(client, message):
+    text = message.text.split("\n")
+    if len(text) > 1 and text[1].startswith("Tag: "):
+        try:
+            tag, user_id = text[1].split("Tag: ")[1].rsplit(maxsplit=1)
+            if not user_id.isdecimal():
+                raise ValueError("Tag user ID must be numeric.")
+            message.from_user = await client.get_users(int(user_id))
+        except Exception as error:
+            LOGGER.error(f"Failed to process mirror Tag line: {error}")
+            await send_message(message, "Invalid or unavailable Tag user ID.")
+            return
+        try:
+            await message.unpin()
+        except Exception:
+            pass
     bot_loop.create_task(Mirror(client, message, is_nzb=True).new_event())
 
 
 async def leech(client, message):
+    text = message.text.split("\n")
+    if len(text) > 1 and text[1].startswith("Tag: "):
+        try:
+            tag, user_id = text[1].split("Tag: ")[1].rsplit(maxsplit=1)
+            if not user_id.isdecimal():
+                raise ValueError("Tag user ID must be numeric.")
+            message.from_user = await client.get_users(int(user_id))
+        except Exception as error:
+            LOGGER.error(f"Failed to process leech Tag line: {error}")
+            await send_message(message, "Invalid or unavailable Tag user ID.")
+            return
+        try:
+            await message.unpin()
+        except Exception:
+            pass
     bot_loop.create_task(Mirror(client, message, is_leech=True).new_event())
 
 
 async def qb_leech(client, message):
+    text = message.text.split("\n")
+    if len(text) > 1 and text[1].startswith("Tag: "):
+        try:
+            tag, user_id = text[1].split("Tag: ")[1].rsplit(maxsplit=1)
+            if not user_id.isdecimal():
+                raise ValueError("Tag user ID must be numeric.")
+            message.from_user = await client.get_users(int(user_id))
+        except Exception as error:
+            LOGGER.error(f"Failed to process leech Tag line: {error}")
+            await send_message(message, "Invalid or unavailable Tag user ID.")
+            return
+        try:
+            await message.unpin()
+        except Exception:
+            pass
     bot_loop.create_task(
         Mirror(client, message, is_qbit=True, is_leech=True).new_event()
     )
 
 
 async def jd_leech(client, message):
+    text = message.text.split("\n")
+    if len(text) > 1 and text[1].startswith("Tag: "):
+        try:
+            tag, user_id = text[1].split("Tag: ")[1].rsplit(maxsplit=1)
+            if not user_id.isdecimal():
+                raise ValueError("Tag user ID must be numeric.")
+            message.from_user = await client.get_users(int(user_id))
+        except Exception as error:
+            LOGGER.error(f"Failed to process leech Tag line: {error}")
+            await send_message(message, "Invalid or unavailable Tag user ID.")
+            return
+        try:
+            await message.unpin()
+        except Exception:
+            pass
     bot_loop.create_task(Mirror(client, message, is_leech=True, is_jd=True).new_event())
 
 
 async def nzb_leech(client, message):
+    text = message.text.split("\n")
+    if len(text) > 1 and text[1].startswith("Tag: "):
+        try:
+            tag, user_id = text[1].split("Tag: ")[1].rsplit(maxsplit=1)
+            if not user_id.isdecimal():
+                raise ValueError("Tag user ID must be numeric.")
+            message.from_user = await client.get_users(int(user_id))
+        except Exception as error:
+            LOGGER.error(f"Failed to process leech Tag line: {error}")
+            await send_message(message, "Invalid or unavailable Tag user ID.")
+            return
+        try:
+            await message.unpin()
+        except Exception:
+            pass
     bot_loop.create_task(
         Mirror(client, message, is_leech=True, is_nzb=True).new_event()
     )
